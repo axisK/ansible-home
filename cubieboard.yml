@@ -6,15 +6,45 @@
     shell: hostname {{inventory_hostname}}
   - name: persist host
     lineinfile: dest=/etc/hosts regexp='^127\.0\.1\.1\scubieboard' line='127.0.1.1 {{inventory_hostname}}'
+  - name: setup tzdata
+    shell: echo "Africa/Johannesburg" > /etc/timezone ; dpkg-reconfigure -f noninteractive tzdata
   - name: setting latest apt sources
     copy: src=sources.list dest=/etc/apt/sources.list force=yes
   - name: apt update
     apt: update_cache=yes
+  - name: install misc and other requirements
+    apt: name={{item}}
+    with_items:
+      - curl
+      - mutt
+      - python-cheetah
+      - git-core
   - name: mount the raid
     mount: fstype=ntfs-3g name=/mnt/raid src=/dev/disk/by-label/EX503 state=mounted
   - name: install samba
-    apt: name=samba
+    apt: name=samba state=present
   - name: copy samba config
     copy: src=smb.conf dest=/etc/samba/smb.conf force=yes
   - name: restart samba
-    service: name=smbd state=restarted
+    service: name=smbd state=reloaded
+  - name: add sabnzbd repo
+    apt_repository: repo='deb http://ppa.launchpad.net/jcfp/ppa/ubuntu raring main' state=present
+  - name: apt update
+    apt: update_cache=yes
+  - name: install sabnzbdplus
+    apt: name=sabnzbdplus state=present
+  - name: setup sabnzbd host
+    lineinfile: dest=/etc/default/sabnzbdplus regexp='^HOST=.*$' line='HOST=0.0.0.0'
+  - name: setup sabnzbd port
+    lineinfile: dest=/etc/default/sabnzbdplus regexp='^PORT=.*$' line='PORT=8080'
+  - name: setup sabnzbd user
+    lineinfile: dest=/etc/default/sabnzbdplus regexp='^USER=.*$' line='USER=root'
+  - name: start sabnzbdplus
+    service: name=sabnzbdplus state=started
+  - name: clone sickbeard
+    git: repo=https://github.com/midgetspy/Sick-Beard.git dest=/mnt/raid/sickbeard accept_hostkey=yes
+  - name: sickbeard initd
+    copy: src=sickbeard.initd dest=/etc/init.d/sickbeard mode=0755
+  - name: sickbeard defaults
+    copy: src=sickbeard.defaults dest=/etc/default/sickbeard
+

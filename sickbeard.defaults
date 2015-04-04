@@ -1,0 +1,3 @@
+SB_USER=root
+SB_HOME=/mnt/raid/sickbeard
+SB_DATA=/mnt/raid/sickbeard
