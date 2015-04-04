@@ -1,0 +1,20 @@
+---
+- hosts: cubieboard
+  remote_user: root
+  tasks:
+  - name: setup the host
+    shell: hostname {{inventory_hostname}}
+  - name: persist host
+    lineinfile: dest=/etc/hosts regexp='^127\.0\.1\.1\scubieboard' line='127.0.1.1 {{inventory_hostname}}'
+  - name: setting latest apt sources
+    copy: src=sources.list dest=/etc/apt/sources.list force=yes
+  - name: apt update
+    apt: update_cache=yes
+  - name: mount the raid
+    mount: fstype=ntfs-3g name=/mnt/raid src=/dev/disk/by-label/EX503 state=mounted
+  - name: install samba
+    apt: name=samba
+  - name: copy samba config
+    copy: src=smb.conf dest=/etc/samba/smb.conf force=yes
+  - name: restart samba
+    service: name=smbd state=restarted
